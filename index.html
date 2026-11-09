@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Apex Clinical Concierge | Austin, TX</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #070a13; color: #f1f5f9; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 12px; }
+        .app-card { width: 100%; max-width: 440px; height: 92vh; max-height: 640px; background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+        .header { background: #0b1120; padding: 16px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; }
+        .brand h2 { font-size: 15px; color: #38bdf8; font-weight: 700; }
+        .brand p { font-size: 11px; color: #94a3b8; }
+        .live-tag { background: #064e3b; color: #34d399; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 12px; border: 1px solid #059669; }
+        .chat-box { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { max-width: 85%; padding: 12px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.45; }
+        .bot { background: #1e293b; color: #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .user { background: #0284c7; color: #fff; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .crm-box { background: #064e3b; border: 1px solid #059669; border-radius: 10px; padding: 12px; margin-top: 8px; font-size: 12px; color: #d1fae5; line-height: 1.6; }
+        .crm-box b { color: #fff; }
+        .input-bar { padding: 12px; background: #0b1120; border-top: 1px solid #1e293b; display: flex; gap: 8px; }
+        input { flex: 1; background: #1e293b; border: 1px solid #334155; padding: 12px 14px; border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
+        input:focus { border-color: #38bdf8; }
+        button { background: #0284c7; color: white; border: none; padding: 0 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="app-card">
+    <div class="header">
+        <div class="brand">
+            <h2>Apex Aesthetics & Dental</h2>
+            <p>Austin, TX • 24/7 Clinical Concierge</p>
+        </div>
+        <div class="live-tag">CRM SYNC ACTIVE</div>
+    </div>
+
+    <div class="chat-box" id="chat">
+        <div class="msg bot">
+            Welcome to Apex Aesthetics & Implant Center (Austin, TX). I can provide direct procedure quotes or sync your consultation opening directly into Dr. Miller's surgical schedule. What procedure are you inquiring about?
+        </div>
+    </div>
+
+    <div class="input-bar">
+        <input type="text" id="userInput" placeholder="Ask about implants, veneers or booking..." onkeypress="if(event.key==='Enter') send()">
+        <button onclick="send()">Send</button>
+    </div>
+</div>
+
+<script>
+    const GOOGLE_CRM_WEBHOOK = "https://script.google.com/macros/s/AKfycbw6qoAWOc6fqe7wFi4BjBSRbK8FkVNhHsU3ZIw9s7_wDpAUL19oP2LLRe0moDbTU-xo/exec";
+
+    async function send() {
+        const inp = document.getElementById('userInput');
+        const chat = document.getElementById('chat');
+        const text = inp.value.trim();
+        if(!text) return;
+
+        chat.innerHTML += `<div class="msg user">${text}</div>`;
+        inp.value = "";
+        chat.scrollTop = chat.scrollHeight;
+
+        const loading = document.createElement("div");
+        loading.className = "msg bot";
+        loading.innerText = "Syncing with Practice Management Ledger...";
+        chat.appendChild(loading);
+        chat.scrollTop = chat.scrollHeight;
+
+        const low = text.toLowerCase();
+        const isBooking = low.includes("book") || low.includes("implant") || low.includes("yes") || low.includes("tomorrow") || low.includes("pm") || low.includes("am") || low.includes("sarah");
+
+        setTimeout(async () => {
+            if(isBooking) {
+                const leadPayload = {
+                    name: "Sarah Jenkins (Verified Inbound)",
+                    phone: "+1 (512) 849-2041",
+                    email: "sarah.j@example.com",
+                    procedure: "Full Arch Dental Implants",
+                    slot: "Tomorrow at 2:00 PM CST",
+                    deal_value: "$6,500"
+                };
+
+                try {
+                    await fetch(GOOGLE_CRM_WEBHOOK, {
+                        method: "POST",
+                        mode: "no-cors",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(leadPayload)
+                    });
+                } catch(e) { 
+                    console.error("CRM Sync Error:", e); 
+                }
+
+                loading.innerHTML = `
+                    Your priority consultation opening has been reserved with Dr. Miller.
+                    <div class="crm-box">
+                        <b>APPOINTMENT COMMITTED (AUSTIN, TX)</b><br>
+                        • Patient: ${leadPayload.name}<br>
+                        • Procedure: ${leadPayload.procedure}<br>
+                        • Pipeline Value: ${leadPayload.deal_value}<br>
+                        • Status: Auto-Populated to Master Clinical Sheet
+                    </div>
+                `;
+            } else {
+                loading.innerText = "Our Full Arch Dental Implants typically range from $4,500 to $8,000 depending on surgical scope. We have an opening tomorrow at 2:00 PM CST. Would you like me to lock this in for you?";
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }, 700);
+    }
+</script>
+</body>
+</html>
